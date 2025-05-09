@@ -65,20 +65,29 @@ const images = [
 ];
 
 const gallery = document.querySelector('.gallery');
-const listItems = gallery.querySelectorAll('.gallery-item');
+const galleryItems = [];
+let lightboxInstance = null;
 
-images.forEach((img, index) => {
-  const li = listItems[index];
-  if (!li) return;
+images.forEach(img => {
+  const li = document.createElement('li');
+  li.classList.add('gallery-item');
 
-  const link = li.querySelector('a.gallery-link');
-  const image = li.querySelector('img.gallery-image');
-
+  const link = document.createElement('a');
+  link.classList.add('gallery-link');
   link.href = img.original;
+
+  const image = document.createElement('img');
+  image.classList.add('gallery-image');
   image.src = img.preview;
   image.dataset.source = img.original;
   image.alt = img.description;
+
+  link.appendChild(image);
+  li.appendChild(link);
+  galleryItems.push(li);
 });
+
+gallery.append(...galleryItems);
 
 gallery.addEventListener('click', event => {
   event.preventDefault();
@@ -87,11 +96,12 @@ gallery.addEventListener('click', event => {
   if (clickedImg.nodeName !== 'IMG') return;
 
   const originalSrc = clickedImg.dataset.source;
+  const altText = clickedImg.alt;
 
-  const instance = basicLightbox.create(
+  lightboxInstance = basicLightbox.create(
     `<div class="modal">
-      <img src="${originalSrc}" alt="${clickedImg.alt}" />
-    </div>`,
+          <img src="${originalSrc}" alt="${altText}" />
+        </div>`,
     {
       onShow: instance => {
         const modalElement = instance.element();
@@ -102,9 +112,20 @@ gallery.addEventListener('click', event => {
             instance.close();
           }
         });
+        document.addEventListener('keydown', handleKeyDown);
+      },
+      onClose: () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        lightboxInstance = null;
       },
     }
   );
 
-  instance.show();
+  lightboxInstance.show();
 });
+
+function handleKeyDown(event) {
+  if (event.key === 'Escape' && lightboxInstance) {
+    lightboxInstance.close();
+  }
+}
